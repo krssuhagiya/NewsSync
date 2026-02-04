@@ -143,7 +143,7 @@ const ArticleDetails = () => {
 
                                 {/* Newsletter Box */}
                                 <div className="mt-8 bg-primary/5 p-6 rounded-xl border border-primary/10">
-                                    <h4 className="font-bold mb-2">Subscribe to NewsDaily</h4>
+                                    <h4 className="font-bold mb-2">Subscribe to NewsSync</h4>
                                     <p className="text-sm text-muted-foreground mb-4">Get the latest headlines delivered to your inbox.</p>
                                     <input
                                         type="email"

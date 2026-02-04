@@ -68,7 +68,7 @@ export function Footer() {
               <div className="w-10 h-10 bg-primary rounded flex items-center justify-center">
                 <span className="text-primary-foreground font-headline font-bold text-xl">N</span>
               </div>
-              <span className="font-headline text-xl font-bold text-background">NewsDaily</span>
+              <span className="font-headline text-xl font-bold text-background">NewsSync</span>
             </a>
             <p className="font-body text-sm text-background/70 mb-6 max-w-xs">
               Your trusted source for breaking news, in-depth analysis, and comprehensive coverage of global events.
@@ -148,7 +148,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 border-t border-background/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="font-body text-xs text-background/50">
-            © {new Date().getFullYear()} NewsDaily. All rights reserved.
+            © {new Date().getFullYear()} NewsSync. All rights reserved.
           </p>
           <div className="flex gap-6">
             <a href="#" className="font-body text-xs text-background/50 hover:text-background transition-colors">

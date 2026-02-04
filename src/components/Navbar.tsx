@@ -48,7 +48,7 @@ export function Navbar() {
                 <span className="text-primary-foreground font-headline font-bold text-xl">N</span>
               </div>
               <span className="font-headline text-2xl font-bold text-headline tracking-tight group-hover:text-primary transition-colors">
-                NewsDaily
+                NewsSync
               </span>
             </Link>
 
