@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 import { SearchDialog } from "./SearchDialog";
 import { PulseDialog } from "./PulseDialog";
+import { ModeToggle } from "./ModeToggle";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -82,6 +83,7 @@ export function Navbar() {
 
             {/* Right section */}
             <div className="flex items-center gap-2">
+              <ModeToggle />
               <Button
                 variant="ghost"
                 size="icon"
