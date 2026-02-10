@@ -2,7 +2,7 @@ import { Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface NewsCardProps {
-  id: number;
+  id: string | number;
   image: string;
   category: string;
   title: string;

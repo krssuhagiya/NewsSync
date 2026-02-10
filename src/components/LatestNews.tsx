@@ -1,11 +1,20 @@
 import { NewsCard } from "./NewsCard";
 import { allArticles } from "@/data/mockData";
+import { useArticles } from "@/hooks/useNews";
+import { formatDistanceToNow } from "date-fns";
 
 export function LatestNews() {
-  // Use articles 37-42 (Home Top Stories)
-  // Or reuse Top Stories 1-6? Let's use 37-42 as they were specifically designed for home
-  // Wait, I added unique ones for Home in mockData (37-42).
-  const latestNews = allArticles.slice(36, 42);
+  const { data: articles, isLoading, error } = useArticles();
+
+  // Use API data if available, otherwise fallback to mock data (or show loading)
+  // Determine which data to show
+  const displayArticles = (articles && articles.length > 0)
+    ? articles
+    : allArticles.slice(36, 42);
+
+  if (isLoading) {
+    return <div className="py-8 text-center">Loading latest news...</div>;
+  }
 
   return (
     <section className="py-8">
@@ -24,11 +33,35 @@ export function LatestNews() {
         </a>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {latestNews.map((article, index) => (
-          <div key={article.id} style={{ animationDelay: `${index * 50}ms` }}>
-            <NewsCard {...article} />
-          </div>
-        ))}
+        {displayArticles.map((article, index) => {
+          // Map API data to NewsCard props
+          // Check if it's API data (has _id) or mock data (has id)
+          const isApi = '_id' in article;
+
+          const props = isApi ? {
+            id: article._id,
+            image: article.imageUrl || "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=400&h=250&fit=crop",
+            category: article.category,
+            title: article.title,
+            summary: article.shortDescription,
+            author: article.author || "Unknown",
+            time: article.createdAt ? formatDistanceToNow(new Date(article.createdAt), { addSuffix: true }) : "Just now"
+          } : {
+            id: article.id,
+            image: article.image || article.imageUrl,
+            category: article.category,
+            title: article.title,
+            summary: article.summary || article.shortDescription,
+            author: article.author,
+            time: article.time || article.publishedAt
+          };
+
+          return (
+            <div key={props.id} style={{ animationDelay: `${index * 50}ms` }}>
+              <NewsCard {...props} />
+            </div>
+          );
+        })}
       </div>
     </section>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Sheet,
     SheetContent,
@@ -56,19 +56,115 @@ export function PulseDialog({ open, onOpenChange }: PulseDialogProps) {
     const [isPlaying, setIsPlaying] = useState(true);
     const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
 
-    // Simulate "reading" progress
+    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+    // TTS Logic - Refactored for stability
+
+    // 1. Cleanup on close or unmount
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (open && isPlaying) {
-            interval = setInterval(() => {
-                // In a real app, this would track audio progress
-            }, 1000);
+        if (!open) {
+            window.speechSynthesis.cancel();
+            setIsPlaying(false);
         }
-        return () => clearInterval(interval);
-    }, [open, isPlaying]);
+        return () => {
+            // Only cancel on unmount, not on every re-render of this effect if we were to adding dependencies
+        };
+    }, [open]);
+
+    // Cleanup on real unmount
+    useEffect(() => {
+        return () => {
+            window.speechSynthesis.cancel();
+        };
+    }, []);
+
+    const handleNext = () => {
+        setCurrentStoryIndex((prev) => {
+            if (prev + 1 >= MOCK_NEWS.length) {
+                // Stop at the end
+                setIsPlaying(false);
+                return prev; // Stay on last one or go back to start? User said "completed, it will not start from begining"
+                // Usually stopping at the last one is good.
+            }
+            return prev + 1;
+        });
+    };
+
+    const speakStory = (index: number) => {
+        window.speechSynthesis.cancel();
+
+        const news = MOCK_NEWS[index];
+        const text = `${news.title}. ${news.summary}`;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utteranceRef.current = utterance; // Store ref to prevent GC
+
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+
+        utterance.onend = () => {
+            handleNext();
+        };
+
+        // Ensure we are in playing state when starting a new story
+        setIsPlaying(true);
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // 2. Handle Story Change
+    useEffect(() => {
+        if (open) {
+            speakStory(currentStoryIndex);
+        }
+    }, [currentStoryIndex, open]);
+
+    // 3. Handle Play/Pause Toggle
+    useEffect(() => {
+        if (!open) return;
+
+        if (isPlaying) {
+            window.speechSynthesis.resume();
+
+            // Safety check: if we're supposed to be playing but not speaking,
+            // the utterance might have been lost or finished. Restart current story.
+            // We use a small timeout to let resume take effect first.
+            const timeoutId = setTimeout(() => {
+                if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+                    speakStory(currentStoryIndex);
+                }
+            }, 100);
+
+            return () => clearTimeout(timeoutId);
+        } else {
+            window.speechSynthesis.pause();
+        }
+    }, [isPlaying, open]);
+
 
     const handleSkip = () => {
-        setCurrentStoryIndex((prev) => (prev + 1) % MOCK_NEWS.length);
+        // Just changing the index will trigger the effect to speak
+        setCurrentStoryIndex((prev) => {
+            if (prev + 1 >= MOCK_NEWS.length) {
+                return 0; // Loop manually if user clicks skip? Or just stop? 
+                // Let's assume skip loops or stops. Usually skip loops or does nothing at end.
+                // Let's make skip loop for manual interaction, but auto-play stops.
+                return 0;
+            }
+            return prev + 1;
+        });
+    };
+
+    const handlePlayPause = () => {
+        setIsPlaying((prev) => !prev);
+    };
+
+    const handleStoryClick = (index: number) => {
+        // Just toggle index, effect handles speech
+        if (currentStoryIndex === index) {
+            // If clicking same story, toggle play/pause
+            handlePlayPause();
+        } else {
+            setCurrentStoryIndex(index);
+        }
     };
 
     return (
@@ -118,7 +214,7 @@ export function PulseDialog({ open, onOpenChange }: PulseDialogProps) {
                                     variant="outline"
                                     size="icon"
                                     className="rounded-full h-12 w-12 border-primary/30 hover:bg-primary/10 hover:text-primary transition-all hover:scale-105"
-                                    onClick={() => setIsPlaying(!isPlaying)}
+                                    onClick={handlePlayPause}
                                 >
                                     {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-1" />}
                                 </Button>
@@ -169,10 +265,10 @@ export function PulseDialog({ open, onOpenChange }: PulseDialogProps) {
                                     <div
                                         key={news.id}
                                         className={`p-4 rounded-xl transition-all duration-300 border ${index === currentStoryIndex
-                                                ? "bg-primary/10 border-primary/40 shadow-sm"
-                                                : "bg-background/40 border-border/40 hover:bg-background/60 hover:border-border/80"
+                                            ? "bg-primary/10 border-primary/40 shadow-sm"
+                                            : "bg-background/40 border-border/40 hover:bg-background/60 hover:border-border/80"
                                             } cursor-pointer group`}
-                                        onClick={() => setCurrentStoryIndex(index)}
+                                        onClick={() => handleStoryClick(index)}
                                     >
                                         <div className="flex justify-between items-start mb-2">
                                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${index === currentStoryIndex ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"

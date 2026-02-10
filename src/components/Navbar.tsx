@@ -1,27 +1,57 @@
 import { useState } from "react";
-import { Search, User, Menu, X, Radio } from "lucide-react";
+import { Search, User, Menu, X, Radio, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SearchDialog } from "./SearchDialog";
 import { PulseDialog } from "./PulseDialog";
 import { ModeToggle } from "./ModeToggle";
-
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Top Stories", href: "/top-stories" },
-  { label: "World", href: "/world" },
-  { label: "Business", href: "/business" },
-  { label: "Technology", href: "/technology" },
-  { label: "Sports", href: "/sports" },
-  { label: "Entertainment", href: "/entertainment" },
-  // Pulse removed from here to be handled separately
-];
+import { useCategories } from "@/hooks/useNews";
+import { useAuth } from "@/context/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [pulseOpen, setPulseOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { data: categories, isLoading } = useCategories();
+  const { user, logout } = useAuth();
+
+  // Default nav items
+  const staticItems = [
+    { label: "Home", href: "/" },
+    { label: "Top Stories", href: "/top-stories" }
+  ];
+
+  // Dynamic categories
+  const categoryItems = categories?.map((cat: any) => ({
+    label: cat.name,
+    href: `/category/${cat.slug}`
+  })) || [];
+
+  // Fallback if no categories
+  const fallbackCategories = [
+    { label: "World", href: "/world" },
+    { label: "Business", href: "/business" },
+    { label: "Technology", href: "/technology" },
+  ];
+
+  const navLinks = staticItems.concat(
+    (categories && categories.length > 0) ? categoryItems : fallbackCategories
+  );
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   return (
     <>
@@ -57,7 +87,7 @@ export function Navbar() {
             <div className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => (
                 <Link
-                  key={link.label}
+                  key={link.href}
                   to={link.href}
                   className={`font-body text-sm font-medium transition-colors relative group ${location.pathname === link.href ? "text-primary" : "text-body hover:text-primary"
                     }`}
@@ -93,16 +123,42 @@ export function Navbar() {
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
               </Button>
-              <Link to="/login">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-body hover:text-primary hover:bg-secondary"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="sr-only">Profile</span>
-                </Button>
-              </Link>
+
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-body hover:text-primary hover:bg-secondary"
+                    >
+                      <User className="h-5 w-5" />
+                      <span className="sr-only">Profile</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      {user.full_name || user.email}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link to="/login">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-body hover:text-primary hover:bg-secondary"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">Sign In</span>
+                  </Button>
+                </Link>
+              )}
 
               {/* Mobile menu toggle */}
               <Button
@@ -123,7 +179,7 @@ export function Navbar() {
               <div className="flex flex-col gap-3">
                 {navLinks.map((link) => (
                   <Link
-                    key={link.label}
+                    key={link.href}
                     to={link.href}
                     className={`font-body text-base font-medium transition-colors py-2 ${location.pathname === link.href ? "text-primary" : "text-body hover:text-primary"
                       }`}
@@ -142,6 +198,26 @@ export function Navbar() {
                   <Radio className="w-4 h-4 text-primary" />
                   Pulse
                 </button>
+                {user ? (
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="font-body text-base font-medium transition-colors py-2 text-destructive hover:text-destructive/80 text-left flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="font-body text-base font-medium transition-colors py-2 text-body hover:text-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                )}
               </div>
             </div>
           )}
